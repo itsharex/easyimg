@@ -1,8 +1,31 @@
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { verifyToken } from '../../utils/jwt'
+
+// GitHub package.json 的 URL
+const PROXY_URL = 'https://cf.111443.xyz/https://raw.githubusercontent.com/chaos-zhu/easyimg/main/package.json'
+const DIRECT_URL = 'https://raw.githubusercontent.com/chaos-zhu/easyimg/main/package.json'
 
 export default defineEventHandler(async (event) => {
   try {
+    // 验证登录状态
+    const authHeader = getHeader(event, 'authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        success: false,
+        message: '需要登录后才能检测版本更新'
+      }
+    }
+
+    const token = authHeader.substring(7)
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return {
+        success: false,
+        message: '登录已过期，请重新登录'
+      }
+    }
+
     // 读取本地 package.json 获取当前版本
     const packageJsonPath = resolve(process.cwd(), 'package.json')
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
@@ -13,30 +36,20 @@ export default defineEventHandler(async (event) => {
     let hasUpdate = false
     let error = null
 
-    try {
-      const response = await fetch(
-        'https://cf.111443.xyz/https://raw.githubusercontent.com/chaos-zhu/easyimg/main/package.json',
-        {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'EasyImg-Version-Check'
-          }
-        }
-      )
+    // 尝试通过代理获取
+    let remotePackage = await fetchPackageJson(PROXY_URL)
 
-      if (response.ok) {
-        const remotePackage = await response.json()
-        latestVersion = remotePackage.version
+    // 如果代理失败，使用源地址兜底
+    if (!remotePackage) {
+      remotePackage = await fetchPackageJson(DIRECT_URL)
+    }
 
-        // 比较版本号
-        if (latestVersion) {
-          hasUpdate = compareVersions(latestVersion, currentVersion) > 0
-        }
-      } else {
-        error = `GitHub 请求失败: ${response.status}`
-      }
-    } catch (fetchError) {
-      error = `无法连接到 GitHub: ${fetchError.message}`
+    if (remotePackage && remotePackage.version) {
+      latestVersion = remotePackage.version
+      // 比较版本号
+      hasUpdate = compareVersions(latestVersion, currentVersion) > 0
+    } else {
+      error = '无法获取最新版本信息'
     }
 
     return {
@@ -55,6 +68,32 @@ export default defineEventHandler(async (event) => {
     }
   }
 })
+
+/**
+ * 从指定 URL 获取 package.json
+ * @param {string} url - 请求地址
+ * @returns {object|null} - package.json 对象或 null
+ */
+async function fetchPackageJson(url) {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'EasyImg-Version-Check'
+      },
+      // 设置超时时间为 10 秒
+      signal: AbortSignal.timeout(10000)
+    })
+
+    if (response.ok) {
+      return await response.json()
+    }
+  } catch (err) {
+    // 请求失败，返回 null
+    console.log(`版本检测请求失败 (${url}):`, err.message)
+  }
+  return null
+}
 
 /**
  * 比较两个语义化版本号

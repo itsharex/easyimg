@@ -3,8 +3,8 @@
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-8">关于</h1>
 
     <div class="space-y-6">
-      <!-- 版本信息 -->
-      <div class="card p-6">
+      <!-- 版本信息（仅登录后显示） -->
+      <div v-if="authStore.isAuthenticated" class="card p-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Icon name="heroicons:information-circle" class="w-5 h-5 text-primary-500" />
           版本信息
@@ -179,11 +179,14 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth'
 
 // 页面元数据
 definePageMeta({
   title: '关于'
 })
+
+const authStore = useAuthStore()
 
 // 版本信息
 const versionInfo = reactive({
@@ -197,11 +200,15 @@ const loading = ref(false)
 
 // 检查版本更新
 async function checkVersion() {
+  if (!authStore.isAuthenticated) return
+
   loading.value = true
   versionInfo.error = null
 
   try {
-    const response = await $fetch('/api/version/check')
+    const response = await $fetch('/api/version/check', {
+      headers: authStore.authHeader
+    })
 
     if (response.success) {
       versionInfo.currentVersion = response.data.currentVersion
@@ -218,8 +225,10 @@ async function checkVersion() {
   }
 }
 
-// 页面加载时自动检测版本
+// 页面加载时自动检测版本（仅登录后）
 onMounted(() => {
-  checkVersion()
+  if (authStore.isAuthenticated) {
+    checkVersion()
+  }
 })
 </script>
