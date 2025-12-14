@@ -91,7 +91,7 @@ _✨ 简单易用的个人图床系统，基于 Nuxt.js 构建 ✨_
 ### Docker Compose 部署（推荐）
 
 ```bash
-# 1. 创建nsfw_detector目录
+# 1. 创建 easyimg 目录
 mkdir -p /root/easyimg && cd /root/easyimg
 
 
