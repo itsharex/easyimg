@@ -9,7 +9,7 @@ _✨ 简单易用的个人图床系统，基于 Nuxt.js 构建 ✨_
 </a>
 
 <a href="https://github.com/chaos-zhu/easyimg">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/Apache-License2.0-green" alt="License">
 </a>
 
 <a href="https://github.com/chaos-zhu/easyimg">
