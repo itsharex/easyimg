@@ -3,9 +3,12 @@
  * 后续可扩展支持其他通知方式（钉钉等）
  */
 
+import { readFile } from 'fs/promises'
+import { existsSync } from 'fs'
 import db from './db.js'
 import TelegramBot from 'node-telegram-bot-api'
 import nodemailer from 'nodemailer'
+import { getImagePath } from './upload.js'
 
 // 通知类型枚举
 export const NOTIFICATION_TYPES = {
@@ -219,6 +222,64 @@ function isValidImageUrl(url) {
 }
 
 /**
+ * 从本地文件系统读取图片
+ * @param {string} filename - 图片文件名
+ * @returns {Promise<Buffer|null>} 图片Buffer，失败返回null
+ */
+async function readLocalImage(filename) {
+  try {
+    const filepath = getImagePath(filename)
+
+    if (!existsSync(filepath)) {
+      console.warn(`[Notification] 本地图片文件不存在: ${filepath}`)
+      return null
+    }
+
+    const buffer = await readFile(filepath)
+    return buffer
+  } catch (error) {
+    console.warn('[Notification] 读取本地图片出错:', error.message)
+    return null
+  }
+}
+
+/**
+ * 根据content-type获取文件扩展名
+ */
+function getExtensionFromContentType(contentType) {
+  const map = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/bmp': 'bmp',
+    'image/svg+xml': 'svg'
+  }
+  return map[contentType] || 'jpg'
+}
+
+/**
+ * 构建 Telegram 消息文本（用于 caption 或普通消息）
+ */
+function buildTelegramMessage(payload, includeImageUrl = false) {
+  let message = `*${escapeMarkdown(payload.title)}*\n${escapeMarkdown(payload.message)}`
+
+  // 如果有额外数据，添加到消息中
+  if (payload.data && Object.keys(payload.data).length > 0) {
+    message += '\n\n*详细信息:*'
+    for (const [key, value] of Object.entries(payload.data)) {
+      // 跳过图片URL（除非明确要求包含）
+      if (!includeImageUrl && (key === 'url' || key === 'imageUrl')) continue
+      const displayValue = typeof value === 'object' ? JSON.stringify(value) : value
+      message += `\n• ${key}: \`${escapeMarkdown(String(displayValue))}\``
+    }
+  }
+
+  return message
+}
+
+/**
  * 发送 Telegram 通知
  */
 async function sendTelegramNotification(config, payload) {
@@ -239,40 +300,60 @@ async function sendTelegramNotification(config, payload) {
     const imageUrl = payload.data?.url || payload.data?.imageUrl
     const hasValidImageUrl = isValidImageUrl(imageUrl)
 
-    if (hasValidImageUrl) {
-      // 使用文本消息 + 链接预览方式发送图片通知
-      // 将图片 URL 放在消息开头，Telegram 会自动生成图片预览
-      let message = `${imageUrl}\n\n`
-      message += `*${escapeMarkdown(payload.title)}*\n${escapeMarkdown(payload.message)}`
+    // 优先尝试从本地读取图片文件
+    const localFilename = payload.data?.filename
+    let imageBuffer = null
 
-      // 如果有额外数据，添加到消息中（排除url字段，因为已经显示了链接）
-      if (payload.data && Object.keys(payload.data).length > 0) {
-        message += '\n\n*详细信息:*'
-        for (const [key, value] of Object.entries(payload.data)) {
-          if (key === 'url' || key === 'imageUrl') continue // 跳过图片URL
-          const displayValue = typeof value === 'object' ? JSON.stringify(value) : value
-          message += `\n• ${key}: \`${escapeMarkdown(String(displayValue))}\``
+    if (localFilename) {
+      console.log('[Notification] 尝试读取本地图片:', localFilename)
+      imageBuffer = await readLocalImage(localFilename)
+    }
+
+    if (imageBuffer) {
+      // 成功读取本地图片，使用Buffer发送
+      const caption = buildTelegramMessage(payload, false)
+      const format = payload.data?.format || getExtensionFromContentType('image/jpeg')
+      const contentType = `image/${format === 'jpg' ? 'jpeg' : format}`
+
+      try {
+        // 使用 sendPhoto API 发送图片（使用Buffer）
+        await bot.sendPhoto(chatId, imageBuffer, {
+          caption: caption,
+          parse_mode: 'Markdown'
+        }, {
+          filename: localFilename,
+          contentType: contentType
+        })
+        console.log('[Notification] Telegram 图片通知发送成功:', payload.title)
+      } catch (photoError) {
+        // 如果 sendPhoto 失败，回退到普通消息
+        console.warn('[Notification] Telegram sendPhoto 失败，回退到普通消息:', photoError.message)
+
+        let fallbackMessage = buildTelegramMessage(payload, true)
+        if (hasValidImageUrl) {
+          fallbackMessage += `\n\n🔗 [查看图片](${imageUrl})`
         }
-      }
 
-      // 启用链接预览，Telegram 会自动为图片 URL 生成预览
-      await bot.sendMessage(chatId, message, {
+        await bot.sendMessage(chatId, fallbackMessage, {
+          parse_mode: 'Markdown',
+          disable_web_page_preview: false
+        })
+        console.log('[Notification] Telegram 回退消息发送成功:', payload.title)
+      }
+    } else if (hasValidImageUrl) {
+      // 本地读取失败但有URL，发送带链接的文本消息
+      console.warn('[Notification] 本地图片读取失败，发送带链接的文本消息')
+
+      let fallbackMessage = buildTelegramMessage(payload, true)
+      fallbackMessage += `\n\n🔗 [查看图片](${imageUrl})`
+
+      await bot.sendMessage(chatId, fallbackMessage, {
         parse_mode: 'Markdown',
         disable_web_page_preview: false
       })
     } else {
       // 没有有效图片URL时，发送普通文本消息
-      let message = `*${escapeMarkdown(payload.title)}*\n${escapeMarkdown(payload.message)}`
-
-      // 如果有额外数据，添加到消息中
-      if (payload.data && Object.keys(payload.data).length > 0) {
-        message += '\n\n*详细信息:*'
-        for (const [key, value] of Object.entries(payload.data)) {
-          const displayValue = typeof value === 'object' ? JSON.stringify(value) : value
-          message += `\n• ${key}: \`${escapeMarkdown(String(displayValue))}\``
-        }
-      }
-
+      const message = buildTelegramMessage(payload, true)
       await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' })
     }
 
