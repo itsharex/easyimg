@@ -320,6 +320,14 @@ function handleClickOutside(event) {
   }
 }
 
+// 右键点击其他地方时关闭菜单
+function handleContextMenuOutside(event) {
+  // 如果菜单可见且右键点击不在当前菜单内，则关闭菜单
+  if (contextMenuVisible.value && contextMenuRef.value && !contextMenuRef.value.contains(event.target)) {
+    hideContextMenu()
+  }
+}
+
 // 滚动时关闭菜单
 function handleScroll() {
   hideContextMenu()
@@ -327,11 +335,13 @@ function handleScroll() {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('contextmenu', handleContextMenuOutside)
   document.addEventListener('scroll', handleScroll, true)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('contextmenu', handleContextMenuOutside)
   document.removeEventListener('scroll', handleScroll, true)
 })
 </script>
