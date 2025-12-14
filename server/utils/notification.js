@@ -240,51 +240,26 @@ async function sendTelegramNotification(config, payload) {
     const hasValidImageUrl = isValidImageUrl(imageUrl)
 
     if (hasValidImageUrl) {
-      // 构建带图片的消息内容（Markdown 格式）
-      let caption = `*${escapeMarkdown(payload.title)}*\n${escapeMarkdown(payload.message)}`
+      // 使用文本消息 + 链接预览方式发送图片通知
+      // 将图片 URL 放在消息开头，Telegram 会自动生成图片预览
+      let message = `${imageUrl}\n\n`
+      message += `*${escapeMarkdown(payload.title)}*\n${escapeMarkdown(payload.message)}`
 
-      // 如果有额外数据，添加到消息中（排除url字段，因为图片已经显示）
+      // 如果有额外数据，添加到消息中（排除url字段，因为已经显示了链接）
       if (payload.data && Object.keys(payload.data).length > 0) {
-        caption += '\n\n*详细信息:*'
+        message += '\n\n*详细信息:*'
         for (const [key, value] of Object.entries(payload.data)) {
           if (key === 'url' || key === 'imageUrl') continue // 跳过图片URL
           const displayValue = typeof value === 'object' ? JSON.stringify(value) : value
-          caption += `\n• ${key}: \`${escapeMarkdown(String(displayValue))}\``
+          message += `\n• ${key}: \`${escapeMarkdown(String(displayValue))}\``
         }
       }
 
-      try {
-        // 尝试使用 sendPhoto 发送图片，图片会直接显示在对话中
-        await bot.sendPhoto(chatId, imageUrl, {
-          caption: caption,
-          parse_mode: 'Markdown'
-        })
-      } catch (photoError) {
-        // 如果 sendPhoto 失败（例如 Telegram 无法访问图片URL，或图片格式不支持），
-        // 回退到发送带链接的文本消息，利用 Telegram 的链接预览功能显示图片
-        console.warn('[Notification] Telegram sendPhoto 失败，回退到文本消息:', photoError.message)
-
-        // 将图片 URL 放在消息开头（不使用 Markdown 链接格式），
-        // Telegram 会自动为第一个链接生成预览（包括图片缩略图）
-        let fallbackMessage = `${imageUrl}\n\n`
-        fallbackMessage += `*${escapeMarkdown(payload.title)}*\n${escapeMarkdown(payload.message)}`
-
-        // 如果有额外数据，添加到消息中
-        if (payload.data && Object.keys(payload.data).length > 0) {
-          fallbackMessage += '\n\n*详细信息:*'
-          for (const [key, value] of Object.entries(payload.data)) {
-            if (key === 'url' || key === 'imageUrl') continue // 跳过图片URL
-            const displayValue = typeof value === 'object' ? JSON.stringify(value) : value
-            fallbackMessage += `\n• ${key}: \`${escapeMarkdown(String(displayValue))}\``
-          }
-        }
-
-        // 不禁用链接预览，让 Telegram 自动生成图片预览
-        await bot.sendMessage(chatId, fallbackMessage, {
-          parse_mode: 'Markdown',
-          disable_web_page_preview: false
-        })
-      }
+      // 启用链接预览，Telegram 会自动为图片 URL 生成预览
+      await bot.sendMessage(chatId, message, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: false
+      })
     } else {
       // 没有有效图片URL时，发送普通文本消息
       let message = `*${escapeMarkdown(payload.title)}*\n${escapeMarkdown(payload.message)}`
