@@ -53,6 +53,14 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // 检查是否为违规图片（NSFW）
+    if (image.isNsfw) {
+      throw createError({
+        statusCode: 403,
+        message: '该图片因违规已被禁止访问'
+      })
+    }
+
     // 检查文件是否存在
     const filePath = join(uploadsDir, image.filename)
 
