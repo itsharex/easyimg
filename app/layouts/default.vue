@@ -146,6 +146,7 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useSettingsStore } from '~/stores/settings'
 import { useToastStore } from '~/stores/toast'
@@ -161,6 +162,39 @@ const appName = computed(() => settingsStore.appSettings.appName || 'EasyImg')
 const appLogo = computed(() => settingsStore.appSettings.appLogo || '/favicon.png')
 const backgroundUrl = computed(() => settingsStore.appSettings.backgroundUrl || '')
 const backgroundBlur = computed(() => settingsStore.appSettings.backgroundBlur || 0)
+
+// 获取 favicon MIME 类型
+function getFaviconType(url) {
+  if (url.endsWith('.svg')) return 'image/svg+xml'
+  if (url.endsWith('.ico')) return 'image/x-icon'
+  if (url.endsWith('.png')) return 'image/png'
+  if (url.endsWith('.jpg') || url.endsWith('.jpeg')) return 'image/jpeg'
+  if (url.endsWith('.gif')) return 'image/gif'
+  if (url.endsWith('.webp')) return 'image/webp'
+  return 'image/png'
+}
+
+// 立即更新 favicon（直接操作 DOM）
+function updateFavicon(url) {
+  if (typeof document === 'undefined') return
+
+  // 移除所有现有的 favicon link 标签
+  const existingLinks = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
+  existingLinks.forEach(link => link.remove())
+
+  // 创建新的 favicon link 标签
+  const link = document.createElement('link')
+  link.rel = 'icon'
+  link.type = getFaviconType(url)
+  // 添加时间戳避免缓存
+  link.href = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now()
+  document.head.appendChild(link)
+}
+
+// 监听 appLogo 变化，立即更新 favicon
+watch(appLogo, (newLogo) => {
+  updateFavicon(newLogo)
+}, { immediate: true })
 
 // 动态设置页面标题
 useHead({

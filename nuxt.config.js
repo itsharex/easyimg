@@ -37,10 +37,8 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: '简单易用的个人图床' }
-      ],
-      link: [
-        { rel: 'icon', type: 'image/png', href: '/favicon.png' }
       ]
+      // favicon 由客户端动态设置，避免页面刷新时闪动
     }
   },
 
