@@ -631,9 +631,22 @@
         <!-- 请求参数 -->
         <div class="mb-4">
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">请求参数</h4>
-          <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-            <code class="text-sm text-gray-700 dark:text-gray-300">Content-Type: multipart/form-data</code><br/>
-            <code class="text-sm text-gray-700 dark:text-gray-300">file: 图片文件</code>
+          <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 space-y-2">
+            <div>
+              <span class="text-xs font-medium text-blue-600 dark:text-blue-400">方式一：multipart/form-data</span>
+              <div class="mt-1">
+                <code class="text-sm text-gray-700 dark:text-gray-300">Content-Type: multipart/form-data</code><br/>
+                <code class="text-sm text-gray-700 dark:text-gray-300">file: 图片文件</code>
+              </div>
+            </div>
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
+              <span class="text-xs font-medium text-purple-600 dark:text-purple-400">方式二：JSON + Base64（仅私有API）</span>
+              <div class="mt-1">
+                <code class="text-sm text-gray-700 dark:text-gray-300">Content-Type: application/json</code><br/>
+                <code class="text-sm text-gray-700 dark:text-gray-300">base64: base64编码的图片数据（支持data URI前缀）</code><br/>
+                <code class="text-sm text-gray-700 dark:text-gray-300">filename: 文件名（可选）</code>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -641,11 +654,23 @@
         <div class="mb-4">
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">cURL 示例</h4>
           <div class="relative">
-            <pre class="bg-gray-900 text-gray-100 rounded-lg p-3 text-sm overflow-x-auto"><code><span class="text-gray-500"># 公共上传</span>
+            <pre class="bg-gray-900 text-gray-100 rounded-lg p-3 text-sm overflow-x-auto"><code><span class="text-gray-500"># 公共上传（仅支持 multipart/form-data）</span>
 curl -X POST "{{ baseUrl }}/api/upload/public" -F "file=@image.jpg"
 
-<span class="text-gray-500"># 私有上传</span>
-curl -X POST "{{ baseUrl }}/api/upload/private" -H "X-API-Key: your-key" -F "file=@image.jpg"</code></pre>
+<span class="text-gray-500"># 私有上传 - multipart/form-data 方式</span>
+curl -X POST "{{ baseUrl }}/api/upload/private" -H "X-API-Key: your-key" -F "file=@image.jpg"
+
+<span class="text-gray-500"># 私有上传 - Base64 方式（带 data URI 前缀）</span>
+curl -X POST "{{ baseUrl }}/api/upload/private" \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"base64": "data:image/png;base64,iVBORw0KGgo...", "filename": "my-image.png"}'
+
+<span class="text-gray-500"># 私有上传 - Base64 方式（纯 base64，默认识别为 PNG）</span>
+curl -X POST "{{ baseUrl }}/api/upload/private" \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"base64": "iVBORw0KGgo..."}'</code></pre>
             <button
               @click="copyCode('curl-all')"
               class="absolute top-1.5 right-1.5 p-1.5 text-gray-400 hover:text-white transition-colors"
@@ -660,7 +685,8 @@ curl -X POST "{{ baseUrl }}/api/upload/private" -H "X-API-Key: your-key" -F "fil
         <div>
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">JavaScript 示例</h4>
           <div class="relative">
-            <pre class="bg-gray-900 text-gray-100 rounded-lg p-3 text-sm overflow-x-auto"><code>const formData = new FormData();
+            <pre class="bg-gray-900 text-gray-100 rounded-lg p-3 text-sm overflow-x-auto"><code><span class="text-gray-500">// ===== multipart/form-data 方式 =====</span>
+const formData = new FormData();
 formData.append('file', fileInput.files[0]);
 
 <span class="text-gray-500">// 公共上传</span>
@@ -671,6 +697,31 @@ fetch('{{ baseUrl }}/api/upload/private', {
   method: 'POST',
   headers: { 'X-API-Key': 'your-key' },
   body: formData
+});
+
+<span class="text-gray-500">// ===== Base64 方式（仅私有API支持）=====</span>
+<span class="text-gray-500">// 将文件转换为 base64</span>
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+<span class="text-gray-500">// 使用 base64 上传</span>
+const base64Data = await fileToBase64(fileInput.files[0]);
+fetch('{{ baseUrl }}/api/upload/private', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'your-key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    base64: base64Data,
+    filename: 'my-image.png'
+  })
 });</code></pre>
             <button
               @click="copyCode('js-all')"
