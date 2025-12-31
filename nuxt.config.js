@@ -43,6 +43,10 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    // 设置最大请求体大小为 500MB（支持大文件 base64 上传）
+    experimental: {
+      bodySizeLimit: 500 * 1024 * 1024 // 500MB
+    },
     // CORS 配置
     routeRules: {
       '/api/**': {
