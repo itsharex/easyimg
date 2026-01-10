@@ -1,8 +1,10 @@
 {
-  "name": "nuxt-template",
-  "installCommand": "npm install",
+  "name": "easyimg",
+  "entry": ".output/server/index.mjs",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm run build",
   "assets": {
-    "directory": "./.output",
-    "notFoundStrategy": "404Page"
+    "directory": "./.output/public",
+    "notFoundStrategy": "singlePageApplication"
   }
 }
