@@ -4,21 +4,19 @@
 
     <div class="space-y-6">
       <!-- 版本信息（仅登录后显示） -->
-      <div v-if="authStore.isAuthenticated" class="card p-6">
+      <!-- <div v-if="authStore.isAuthenticated" class="card p-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Icon name="heroicons:information-circle" class="w-5 h-5 text-primary-500" />
           版本信息
         </h2>
 
         <div class="space-y-4">
-          <!-- 当前版本 -->
           <div class="flex items-center gap-3 flex-wrap">
             <span class="text-gray-700 dark:text-gray-300">当前版本:</span>
             <span class="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium">
               v{{ versionInfo.currentVersion }}
             </span>
 
-            <!-- 版本状态 -->
             <template v-if="loading">
               <span class="flex items-center gap-1 text-gray-500 text-sm">
                 <Icon name="heroicons:arrow-path" class="w-4 h-4 animate-spin" />
@@ -43,7 +41,6 @@
             </template>
           </div>
 
-          <!-- 最新版本（如果有更新） -->
           <div v-if="versionInfo.hasUpdate && versionInfo.latestVersion" class="flex items-center gap-3 flex-wrap">
             <span class="text-gray-700 dark:text-gray-300">最新版本:</span>
             <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
@@ -60,12 +57,10 @@
             </a>
           </div>
 
-          <!-- 错误信息 -->
           <div v-if="versionInfo.error" class="text-sm text-yellow-600 dark:text-yellow-400">
             {{ versionInfo.error }}
           </div>
 
-          <!-- 检查更新按钮 -->
           <div class="pt-2">
             <button
               @click="checkVersion"
@@ -77,7 +72,7 @@
             </button>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- 项目信息 -->
       <div class="card p-6">
@@ -86,18 +81,6 @@
           项目信息
         </h2>
         <div class="space-y-4">
-          <div class="flex items-center gap-3">
-            <Icon name="simple-icons:telegram" class="w-5 h-5 text-blue-500" />
-            <span class="text-gray-700 dark:text-gray-300">TG频道:</span>
-            <a
-              href="https://t.me/easynode_notify"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-primary-600 dark:text-primary-400 hover:underline"
-            >
-              https://t.me/easynode_notify
-            </a>
-          </div>
           <div class="flex items-center gap-3">
             <Icon name="simple-icons:github" class="w-5 h-5 text-gray-800 dark:text-gray-200" />
             <span class="text-gray-700 dark:text-gray-300">项目地址:</span>
@@ -108,6 +91,18 @@
               class="text-primary-600 dark:text-primary-400 hover:underline"
             >
               https://github.com/chaos-zhu/easyimg
+            </a>
+          </div>
+          <div class="flex items-center gap-3">
+            <Icon name="simple-icons:telegram" class="w-5 h-5 text-blue-500" />
+            <span class="text-gray-700 dark:text-gray-300">TG频道:</span>
+            <a
+              href="https://t.me/easynode_notify"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              https://t.me/easynode_notify
             </a>
           </div>
         </div>
@@ -199,36 +194,36 @@ const versionInfo = reactive({
 const loading = ref(false)
 
 // 检查版本更新
-async function checkVersion() {
-  if (!authStore.isAuthenticated) return
+// async function checkVersion() {
+//   if (!authStore.isAuthenticated) return
 
-  loading.value = true
-  versionInfo.error = null
+//   loading.value = true
+//   versionInfo.error = null
 
-  try {
-    const response = await $fetch('/api/version/check', {
-      headers: authStore.authHeader
-    })
+//   try {
+//     const response = await $fetch('/api/version/check', {
+//       headers: authStore.authHeader
+//     })
 
-    if (response.success) {
-      versionInfo.currentVersion = response.data.currentVersion
-      versionInfo.latestVersion = response.data.latestVersion
-      versionInfo.hasUpdate = response.data.hasUpdate
-      versionInfo.error = response.data.error
-    } else {
-      versionInfo.error = response.message || '检测失败'
-    }
-  } catch (error) {
-    versionInfo.error = '网络请求失败'
-  } finally {
-    loading.value = false
-  }
-}
+//     if (response.success) {
+//       versionInfo.currentVersion = response.data.currentVersion
+//       versionInfo.latestVersion = response.data.latestVersion
+//       versionInfo.hasUpdate = response.data.hasUpdate
+//       versionInfo.error = response.data.error
+//     } else {
+//       versionInfo.error = response.message || '检测失败'
+//     }
+//   } catch (error) {
+//     versionInfo.error = '网络请求失败'
+//   } finally {
+//     loading.value = false
+//   }
+// }
 
 // 页面加载时自动检测版本（仅登录后）
 onMounted(() => {
-  if (authStore.isAuthenticated) {
-    checkVersion()
-  }
+  // if (authStore.isAuthenticated) {
+  //   checkVersion()
+  // }
 })
 </script>
