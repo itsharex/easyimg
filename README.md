@@ -1,3 +1,8 @@
+
+<a href="https://github.com/chaos-zhu/easyimg">
+  <img src="https://img.alicdn.com/imgextra/i3/O1CN01H1UU3i1Cti9lYtFrs_!!6000000000139-2-tps-7534-844.png" alt="easyimg">
+</a>
+
 <div align="center">
 
 # EasyImg
@@ -184,3 +189,4 @@ volumes:
 ## 开源协议
 
 [Apache-License2.0](LICENSE)
+
