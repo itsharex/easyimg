@@ -113,7 +113,7 @@
             </NuxtLink>
 
             <!-- 分隔线 -->
-            <div class="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-0.5 sm:mx-2 flex-shrink-0"></div>
+            <div class="w-px h-6 bg-gray-400 dark:bg-gray-600 flex-shrink-0"></div>
 
             <!-- 登录/登出 -->
             <button
