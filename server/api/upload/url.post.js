@@ -229,8 +229,9 @@ export default defineEventHandler(async (event) => {
     // 如果需要返回 base64
     if (returnBase64) {
       const base64 = processedBuffer.toString('base64')
-      const mimeType = `image/${finalFormat === 'jpg' ? 'jpeg' : finalFormat}`
-      responseData.base64 = `data:${mimeType};base64,${base64}`
+      // const mimeType = `image/${finalFormat === 'jpg' ? 'jpeg' : finalFormat}`
+      // responseData.base64 = `data:${mimeType};base64,${base64}`
+      responseData.base64 = base64
     }
 
     return {
