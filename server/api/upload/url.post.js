@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
     // 解析请求体
     const body = await readBody(event)
-    const { url } = body
+    const { url, returnBase64 = false } = body
 
     if (!url) {
       throw createError({
@@ -188,20 +188,29 @@ export default defineEventHandler(async (event) => {
     await db.images.insert(imageDoc)
 
     // 返回结果
+    const responseData = {
+      id: imageDoc._id,
+      uuid: imageUuid,
+      filename: filename,
+      format: finalFormat,
+      size: processedBuffer.length,
+      width: metadata.width || 0,
+      height: metadata.height || 0,
+      url: `/i/${imageUuid}.${finalFormat}`,
+      uploadedAt: imageDoc.uploadedAt
+    }
+
+    // 如果需要返回 base64
+    if (returnBase64) {
+      const base64 = processedBuffer.toString('base64')
+      const mimeType = `image/${finalFormat === 'jpg' ? 'jpeg' : finalFormat}`
+      responseData.base64 = `data:${mimeType};base64,${base64}`
+    }
+
     return {
       success: true,
       message: '上传成功',
-      data: {
-        id: imageDoc._id,
-        uuid: imageUuid,
-        filename: filename,
-        format: finalFormat,
-        size: processedBuffer.length,
-        width: metadata.width || 0,
-        height: metadata.height || 0,
-        url: `/i/${imageUuid}.${finalFormat}`,
-        uploadedAt: imageDoc.uploadedAt
-      }
+      data: responseData
     }
   } catch (error) {
     if (error.statusCode) {
