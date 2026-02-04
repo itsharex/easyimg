@@ -4,3 +4,4 @@ db
 uploads
 .output
 dist
+.env

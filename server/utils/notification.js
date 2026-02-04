@@ -293,7 +293,14 @@ async function sendTelegramNotification(config, payload) {
   try {
     console.log('[Notification] Telegram 通知预发送:', payload.title)
 
-    const bot = new TelegramBot(telegram.token)
+    // 创建 Bot 实例，从环境变量读取 API 地址（用于反代）
+    const botOptions = {}
+    const apiUrl = process.env.TELEGRAM_API_URL
+    if (apiUrl) {
+      botOptions.baseApiUrl = apiUrl
+      console.log('[Notification] 使用自定义 Telegram API 地址:', apiUrl)
+    }
+    const bot = new TelegramBot(telegram.token, botOptions)
     const chatId = Number(telegram.chatId)
 
     // 检查是否有有效的图片URL需要发送
@@ -777,8 +784,14 @@ export async function testTelegram(telegramConfig) {
 
     const message = `*测试通知*\n这是一条测试通知，用于验证 Telegram 配置是否正确。\n\n_发送时间: ${new Date().toISOString()}_`
 
-    // 使用 node-telegram-bot-api 发送消息
-    const bot = new TelegramBot(telegramConfig.token)
+    // 创建 Bot 实例，从环境变量读取 API 地址（用于反代）
+    const botOptions = {}
+    const apiUrl = process.env.TELEGRAM_API_URL
+    if (apiUrl) {
+      botOptions.baseApiUrl = apiUrl
+      console.log('[Notification] 使用自定义 Telegram API 地址:', apiUrl)
+    }
+    const bot = new TelegramBot(telegramConfig.token, botOptions)
     await bot.sendMessage(Number(telegramConfig.chatId), message, { parse_mode: 'Markdown' })
 
     console.log('[Notification] Telegram 测试通知发送成功')
