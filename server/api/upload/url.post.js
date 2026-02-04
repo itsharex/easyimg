@@ -1,6 +1,7 @@
 import db from '../../utils/db.js'
 import { processImage, getImageMetadata, saveUploadedFile } from '../../utils/image.js'
 import { authMiddleware } from '../../utils/authMiddleware.js'
+import { getRandomHeaders } from '../../utils/fetchHeaders.js'
 import { v4 as uuidv4 } from 'uuid'
 
 export default defineEventHandler(async (event) => {
@@ -67,24 +68,8 @@ export default defineEventHandler(async (event) => {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30秒超时
 
-      // 构建请求头，绕过防盗链检测
-      const fetchHeaders = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"',
-        'Sec-Fetch-Dest': 'image',
-        'Sec-Fetch-Mode': 'no-cors',
-        'Sec-Fetch-Site': 'cross-site',
-        // 使用图片URL的origin作为Referer，绕过防盗链
-        'Referer': imageUrl.origin + '/',
-        'Origin': imageUrl.origin
-      }
+      // 构建随机请求头
+      const fetchHeaders = getRandomHeaders(imageUrl)
 
       response = await fetch(url, {
         signal: controller.signal,
